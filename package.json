@@ -1,0 +1,28 @@
+{
+  "name": "record-video-verification",
+  "version": "1.0.0",
+  "description": "Mobile Video Verification Application for Record Technology Labs",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install --prefix client && npm install --prefix server",
+    "client": "npm run dev --prefix client",
+    "server": "npm run dev --prefix server",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "build": "npm run build --prefix client",
+    "start": "npm run start --prefix server",
+    "create:verification": "npm run create:verification --prefix server",
+    "reset:verification": "npm run reset:verification --prefix server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "keywords": [
+    "record-technology-labs",
+    "mern",
+    "video-verification",
+    "gridfs"
+  ],
+  "author": "Record Technology Labs Candidate",
+  "license": "ISC"
+}
+
