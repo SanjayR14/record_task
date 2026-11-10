@@ -85,6 +85,7 @@ export const VerificationFlow = () => {
   const [uploadingQuestion, setUploadingQuestion] = useState(null);
   const [submissionError, setSubmissionError] = useState(null);
   const storageHydratedRef = useRef(false);
+  const pendingUploadsRef = useRef(new Map());
 
   // Track if candidate is retaking a specific question (to return directly to all_review)
   const [isRetaking, setIsRetaking] = useState(false);
@@ -438,46 +439,59 @@ export const VerificationFlow = () => {
 
     // Upload actual video recording to AWS S3 via presigned URL
     if (videoBlob && token && token !== 'invalid' && token !== 'completed') {
-      try {
-        setUploadingQuestion(questionNumber);
-        const result = await videoService.uploadVideo(
-          token,
-          questionNumber,
-          videoBlob,
-          durationSeconds
-        );
+      const uploadTask = (async () => {
+        try {
+          setUploadingQuestion(questionNumber);
+          const result = await videoService.uploadVideo(
+            token,
+            questionNumber,
+            videoBlob,
+            durationSeconds
+          );
 
-        if (result?.success) {
-          const presignedUrl = await videoService
-            .getPresignedVideoUrl(token, questionNumber)
-            .catch(() => '');
+          if (result?.success) {
+            const presignedUrl = await videoService
+              .getPresignedVideoUrl(token, questionNumber)
+              .catch(() => '');
+            setRecordedResponses((prev) =>
+              prev.map((r) =>
+                r.questionNumber === questionNumber
+                  ? {
+                    ...r,
+                    uploadStatus: 'completed',
+                    storageProvider: result.data?.storageProvider || 's3',
+                    s3Key: result.data?.s3Key || null,
+                    gridFsFileId: result.data?.fileId || null,
+                    videoUrl: presignedUrl || videoService.getVideoUrl(token, questionNumber)
+                  }
+                  : r
+              )
+            );
+          }
+        } catch (err) {
+          if (err?.data?.code === 'ALREADY_COMPLETED') {
+            setSessionState('completed');
+            router.replace(`/verify/${token}/completed`);
+            return;
+          }
+          console.error(`[Upload] Failed to upload Q${questionNumber} video to AWS S3:`, err);
           setRecordedResponses((prev) =>
             prev.map((r) =>
               r.questionNumber === questionNumber
-                ? {
-                  ...r,
-                  uploadStatus: 'completed',
-                  storageProvider: result.data?.storageProvider || 's3',
-                  s3Key: result.data?.s3Key || null,
-                  gridFsFileId: result.data?.fileId || null,
-                  videoUrl: presignedUrl || videoService.getVideoUrl(token, questionNumber)
-                }
+                ? { ...r, uploadStatus: 'failed', uploadError: err.message }
                 : r
             )
           );
+        } finally {
+          if (pendingUploadsRef.current.get(questionNumber) === uploadTask) {
+            pendingUploadsRef.current.delete(questionNumber);
+          }
+          setUploadingQuestion((curr) => (curr === questionNumber ? null : curr));
         }
-      } catch (err) {
-        console.error(`[Upload] Failed to upload Q${questionNumber} video to AWS S3:`, err);
-        setRecordedResponses((prev) =>
-          prev.map((r) =>
-            r.questionNumber === questionNumber
-              ? { ...r, uploadStatus: 'failed', uploadError: err.message }
-              : r
-          )
-        );
-      } finally {
-        setUploadingQuestion(null);
-      }
+      })();
+
+      pendingUploadsRef.current.set(questionNumber, uploadTask);
+      await uploadTask;
     }
   };
 
@@ -518,10 +532,16 @@ export const VerificationFlow = () => {
   const handleFinishAll = async () => {
     setSubmissionError(null);
 
+    if (pendingUploadsRef.current.size > 0) {
+      await Promise.allSettled(Array.from(pendingUploadsRef.current.values()));
+    }
+
     if (token && token !== 'invalid' && token !== 'completed') {
       try {
         const result = await verificationService.finishVerification(token);
         if (result?.success) {
+          setSessionState('completed');
+          updateIsRetaking(false);
           goToStep('feedback');
           return;
         }
@@ -636,6 +656,10 @@ export const VerificationFlow = () => {
         return (
           <Step8AllResponsesReview
             responses={mappedResponses}
+            isUploading={
+              uploadingQuestion !== null ||
+              mappedResponses.some((r) => r.uploadStatus === 'uploading')
+            }
             onRetakeQuestion={handleRetakeFromAllReview}
             onFinish={handleFinishAll}
           />

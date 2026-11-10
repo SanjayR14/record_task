@@ -5,10 +5,11 @@ import { Check } from 'lucide-react';
 import ReadAgainButton from '@/components/common/ReadAgainButton';
 import VerificationContext from '@/context/VerificationContext';
 import { getLanguageConfig, getTranslations } from '@/i18n/translations';
+import { renderBoldPhrases } from '@/utils/formatBoldText';
 
 const Bubble = ({ children, speech }) => (
   <div className="bg-white rounded-xl px-4 py-3.5 max-w-[88%] sm:max-w-[80%] space-y-2">
-    <p className="text-medium sm:text-base text-slate-900 leading-relaxed font-medium">{children}</p>
+    <p className="text-medium sm:text-base text-black leading-relaxed font-medium">{children}</p>
     <ReadAgainButton text={speech} />
   </div>
 );
@@ -17,6 +18,8 @@ export const Step2Instructions = ({ onContinue }) => {
   const ctx = useContext(VerificationContext);
   const selectedLanguage = ctx?.langConfig || getLanguageConfig('en');
   const t = ctx?.t || getTranslations('en');
+
+  const continuingText = t.step2.continuingIn(selectedLanguage.name);
 
   return (
     <div className="flex flex-col w-full space-y-4 pb-6">
@@ -43,8 +46,8 @@ export const Step2Instructions = ({ onContinue }) => {
         </div>
 
         {/* Assistant 1 */}
-        <Bubble speech={t.step2.continuingIn(selectedLanguage.name)}>
-          {t.step2.continuingIn(selectedLanguage.name)}
+        <Bubble speech={continuingText}>
+          {renderBoldPhrases(continuingText, [selectedLanguage.name, selectedLanguage.sub])}
         </Bubble>
 
         {/* Terms notice (renders translated sentence with clickable Terms & Privacy links) */}
@@ -71,16 +74,24 @@ export const Step2Instructions = ({ onContinue }) => {
         </div>
 
         {/* Assistant 2 – role */}
-        <Bubble speech={t.step2.roleSpeech}>{t.step2.roleSpeech}</Bubble>
+        <Bubble speech={t.step2.roleSpeech}>
+          {renderBoldPhrases(t.step2.roleSpeech, ['Warehouse Picker role'])}
+        </Bubble>
 
         {/* Assistant 3 – format */}
-        <Bubble speech={t.step2.formatSpeech}>{t.step2.formatSpeech}</Bubble>
+        <Bubble speech={t.step2.formatSpeech}>
+          {renderBoldPhrases(t.step2.formatSpeech, ['3 quick questions'])}
+        </Bubble>
 
         {/* Assistant 4 – duration & recruiter */}
-        <Bubble speech={t.step2.durationSpeech}>{t.step2.durationSpeech}</Bubble>
+        <Bubble speech={t.step2.durationSpeech}>
+          {renderBoldPhrases(t.step2.durationSpeech, ['5 to 10 minutes'])}
+        </Bubble>
 
         {/* Assistant 5 – privacy */}
-        <Bubble speech={t.step2.privacySpeech}>{t.step2.privacySpeech}</Bubble>
+        <Bubble speech={t.step2.privacySpeech}>
+          {renderBoldPhrases(t.step2.privacySpeech, ['camera and mic'])}
+        </Bubble>
       </div>
 
       {/* Continue */}

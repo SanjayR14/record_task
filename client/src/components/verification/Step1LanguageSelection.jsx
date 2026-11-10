@@ -30,10 +30,10 @@ export const Step1LanguageSelection = ({ onContinue }) => {
 
         {/* Bubble 2 – question */}
         <div className="bg-white rounded-xl px-4 py-3.5 space-y-1">
-          <h2 className="text-medium sm:text-base font-medium text-slate-900 leading-snug">
+          <h2 className="text-medium sm:text-base font-medium text-black leading-snug">
             {selectedId === 'en' ? (
               <>
-                Which <strong className="font-bold">language</strong> would you like to
+                Which <strong className="font-bold text-[#09090B]">language</strong> would you like to
                 <br />
                 continue in?
               </>
@@ -62,11 +62,10 @@ export const Step1LanguageSelection = ({ onContinue }) => {
                 role="radio"
                 aria-checked={isSelected}
                 onClick={() => handleSelect(lang)}
-                className={`relative min-w-0 flex items-center gap-3 p-2.5 sm:p-3 rounded-xl bg-white text-left cursor-pointer transition-colors border ${
-                  isSelected
-                    ? 'border-[#00A63E]'
-                    : 'border-transparent hover:bg-stone-50'
-                } focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00A63E]`}
+                className={`relative min-w-0 flex items-center gap-3 p-2.5 sm:p-3 rounded-xl bg-white text-left cursor-pointer transition-colors border ${isSelected
+                  ? 'border-[#00A63E]'
+                  : 'border-transparent hover:bg-stone-50'
+                  } focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00A63E]`}
               >
                 <span className="flex-shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-[#EEF0F8] text-[#3B5BDB] flex items-center justify-center text-sm sm:text-base font-extrabold">
                   {lang.code}

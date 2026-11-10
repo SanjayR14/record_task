@@ -11,6 +11,7 @@ import feedbackSvg from '@/assets/feedback.svg';
 import { useVerification } from '@/context/VerificationContext';
 import feedbackService from '@/services/feedbackService';
 import { getTranslations } from '@/i18n/translations';
+import { renderBoldPhrases } from '@/utils/formatBoldText';
 
 export const Step9Feedback = ({ onComplete }) => {
   const params = useParams();
@@ -129,8 +130,8 @@ export const Step9Feedback = ({ onComplete }) => {
             {/* Item 2: Match responses */}
             <div className="flex items-center gap-3">
               <img src={matchIcon?.src || matchIcon} alt="Match responses" className="w-8 h-8 shrink-0 select-none" />
-              <span className="!pt-4 font-sans font-medium text-[15px] leading-[22px] tracking-normal">
-                {t.step9.happensNow2}
+              <span className="!pt-4 font-sans font-medium text-[15px] text-black leading-[22px] tracking-normal">
+                {renderBoldPhrases(t.step9.happensNow2, ['Warehouse Picker'])}
               </span>
             </div>
 

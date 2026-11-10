@@ -74,7 +74,7 @@ export const Step7ScenarioPrompt = ({
 
           {/* Scenario label and Listen button */}
           <div className="flex items-center justify-between">
-            <span className="text-normal font-semibold text-[#FF5723] uppercase tracking-wide">
+            <span className="text-normal font-semibold text-[#FF5723] tracking-wide">
               {t.common.scenarioLabel} · Q{questionNumber}
             </span>
 

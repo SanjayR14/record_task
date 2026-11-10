@@ -42,7 +42,7 @@ export const ENGLISH_STRINGS = {
   'common.finish': 'Finish',
   'common.retakeVideo': 'Retake video',
   'common.gotItSaved': 'Got it, saved.',
-  'common.scenarioLabel': 'SCENARIO',
+  'common.scenarioLabel': 'Scenario',
   'common.yourAnswer': 'your answer',
   'common.questionOf': 'Question {{q}} of {{total}}',
 

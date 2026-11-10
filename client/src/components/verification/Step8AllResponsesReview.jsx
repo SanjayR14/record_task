@@ -13,12 +13,24 @@ export const Step8AllResponsesReview = ({
     { questionNumber: 2, duration: '0:11' },
     { questionNumber: 3, duration: '0:11' }
   ],
+  isUploading = false,
   onRetakeQuestion,
   onFinish
 }) => {
   const [playingId, setPlayingId] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const ctx = useContext(VerificationContext);
   const t = ctx?.t || getTranslations();
+
+  const handleFinishClick = async () => {
+    if (isUploading || isSubmitting || !onFinish) return;
+    setIsSubmitting(true);
+    try {
+      await onFinish();
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="flex flex-col w-full space-y-4 pb-6">
@@ -113,10 +125,15 @@ export const Step8AllResponsesReview = ({
       <div className="pt-2">
         <button
           type="button"
-          onClick={onFinish}
-          className="w-full py-3.5 px-4 bg-[#FF5723] hover:bg-[#F4511E] active:bg-[#E64A19] text-white font-semibold text-sm rounded-xl shadow-md transition-all active:scale-[0.99] flex items-center justify-center"
+          disabled={isUploading || isSubmitting}
+          onClick={handleFinishClick}
+          className={`w-full py-3.5 px-4 text-white font-semibold text-sm rounded-xl shadow-md transition-all flex items-center justify-center ${
+            isUploading || isSubmitting
+              ? 'bg-[#FF5723]/70 cursor-not-allowed'
+              : 'bg-[#FF5723] hover:bg-[#F4511E] active:bg-[#E64A19] active:scale-[0.99] cursor-pointer'
+          }`}
         >
-          {t.common.finish}
+          {isUploading ? 'Uploading video...' : isSubmitting ? 'Submitting...' : t.common.finish}
         </button>
       </div>
     </div>

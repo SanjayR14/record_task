@@ -7,6 +7,7 @@ import usePermissions from '@/hooks/usePermissions';
 import VerificationContext from '@/context/VerificationContext';
 import { getLanguageConfig, getTranslations } from '@/i18n/translations';
 import { speakText, stopSpeech } from '@/utils/speech';
+import { renderBoldPhrases } from '@/utils/formatBoldText';
 
 export const Step3Permissions = ({ onGrantPermissions }) => {
   const params = useParams();
@@ -159,8 +160,8 @@ export const Step3Permissions = ({ onGrantPermissions }) => {
       <div className="space-y-3.5">
         {/* Assistant Bubble */}
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-stone-200/60 max-w-[92%] space-y-1.5">
-          <p className="text-lg sm:text-xl text-slate-900 leading-relaxed ">
-            {t.step3.promptSpeech}
+          <p className="text-lg sm:text-xl text-black font-medium leading-relaxed ">
+            {renderBoldPhrases(t.step3.promptSpeech, ['camera, mic, and location', 'camera and mic'])}
           </p>
           <div className="flex items-center justify-between pt-0.5">
             <p className="text-[11px] text-slate-500 font-medium">{t.step3.accessRequired}</p>
