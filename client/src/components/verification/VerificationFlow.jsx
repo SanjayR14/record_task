@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+'use client';
+
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import VerificationContainer from '@/components/layout/VerificationContainer';
 import { useVerification } from '@/context/VerificationContext';
 import verificationService from '@/services/verificationService';
@@ -65,26 +67,27 @@ const ROUTE_TO_STEP = {
 };
 
 export const VerificationFlow = () => {
-  const { token, step, qIdx } = useParams();
-  const navigate = useNavigate();
-  const { setToken, setVerificationData } = useVerification();
+  const params = useParams();
+  const token = params?.token;
+  const slug = Array.isArray(params?.slug) ? params.slug : [];
+  const step = params?.step || slug[0];
+  const qIdx = params?.qIdx || slug[1];
+  const router = useRouter();
+  const {
+    setToken,
+    setVerificationData,
+    selectedLanguage,
+    setSelectedLanguage
+  } = useVerification();
 
   const [backendValidated, setBackendValidated] = useState(false);
   const [sessionState, setSessionState] = useState('valid'); // 'valid' | 'invalid' | 'completed' | 'expired'
   const [uploadingQuestion, setUploadingQuestion] = useState(null);
   const [submissionError, setSubmissionError] = useState(null);
+  const storageHydratedRef = useRef(false);
 
   // Track if candidate is retaking a specific question (to return directly to all_review)
-  const [isRetaking, setIsRetaking] = useState(() => {
-    try {
-      return (
-        sessionStorage.getItem(`record_${token || 'default'}_is_retaking`) === 'true' ||
-        localStorage.getItem(`record_${token || 'default'}_is_retaking`) === 'true'
-      );
-    } catch (e) {
-      return false;
-    }
-  });
+  const [isRetaking, setIsRetaking] = useState(false);
 
   const updateIsRetaking = (val) => {
     setIsRetaking(val);
@@ -114,15 +117,6 @@ export const VerificationFlow = () => {
         return parsed - 1;
       }
     }
-    try {
-      const saved =
-        sessionStorage.getItem(`record_${token || 'default'}_q_idx`) ||
-        localStorage.getItem(`record_${token || 'default'}_q_idx`);
-      if (saved !== null) {
-        const parsed = parseInt(saved, 10);
-        if (!isNaN(parsed) && parsed >= 0 && parsed < QUESTIONS.length) return parsed;
-      }
-    } catch (e) { }
     return 0;
   });
 
@@ -137,19 +131,49 @@ export const VerificationFlow = () => {
     return currentQuestionIndex;
   })();
 
-  const [recordedResponses, setRecordedResponses] = useState(() => {
+  const [recordedResponses, setRecordedResponses] = useState([
+    { questionNumber: 1, duration: '0:11', uploadStatus: 'pending' },
+    { questionNumber: 2, duration: '0:11', uploadStatus: 'pending' },
+    { questionNumber: 3, duration: '0:11', uploadStatus: 'pending' }
+  ]);
+
+  // Hydrate client-side storage state after mount to prevent Next.js SSR hydration mismatches
+  useEffect(() => {
     try {
-      const saved =
+      const savedRetake =
+        sessionStorage.getItem(`record_${token || 'default'}_is_retaking`) === 'true' ||
+        localStorage.getItem(`record_${token || 'default'}_is_retaking`) === 'true';
+      if (savedRetake) setIsRetaking(true);
+
+      if (!qIdx) {
+        const savedQ =
+          sessionStorage.getItem(`record_${token || 'default'}_q_idx`) ||
+          localStorage.getItem(`record_${token || 'default'}_q_idx`);
+        if (savedQ !== null) {
+          const parsed = parseInt(savedQ, 10);
+          if (!isNaN(parsed) && parsed >= 0 && parsed < QUESTIONS.length) {
+            setCurrentQuestionIndex(parsed);
+          }
+        }
+      }
+
+      const savedResp =
         sessionStorage.getItem(`record_${token || 'default'}_responses`) ||
         localStorage.getItem(`record_${token || 'default'}_responses`);
-      if (saved) return JSON.parse(saved);
+      if (savedResp) {
+        const parsedResp = JSON.parse(savedResp);
+        if (Array.isArray(parsedResp) && parsedResp.length > 0) {
+          setRecordedResponses((prev) =>
+            prev.map((item) => {
+              const found = parsedResp.find((r) => r.questionNumber === item.questionNumber);
+              return found ? { ...item, ...found } : item;
+            })
+          );
+        }
+      }
     } catch (e) { }
-    return [
-      { questionNumber: 1, duration: '0:11', uploadStatus: 'pending' },
-      { questionNumber: 2, duration: '0:11', uploadStatus: 'pending' },
-      { questionNumber: 3, duration: '0:11', uploadStatus: 'pending' }
-    ];
-  });
+    storageHydratedRef.current = true;
+  }, [token, qIdx]);
 
   const [showDevControls, setShowDevControls] = useState(false);
 
@@ -175,7 +199,7 @@ export const VerificationFlow = () => {
         if (result?.code === 'INVALID_LINK') {
           setSessionState('invalid');
           if (step !== 'invalid') {
-            navigate(`/verify/${token}/invalid`, { replace: true });
+            router.replace(`/verify/${token}/invalid`);
           }
           return;
         }
@@ -187,7 +211,7 @@ export const VerificationFlow = () => {
             return;
           }
           if (step !== 'completed') {
-            navigate(`/verify/${token}/completed`, { replace: true });
+            router.replace(`/verify/${token}/completed`);
           }
           return;
         }
@@ -195,7 +219,7 @@ export const VerificationFlow = () => {
         if (result?.code === 'LINK_EXPIRED') {
           setSessionState('invalid');
           if (step !== 'invalid') {
-            navigate(`/verify/${token}/invalid`, { replace: true });
+            router.replace(`/verify/${token}/invalid`);
           }
           return;
         }
@@ -203,7 +227,13 @@ export const VerificationFlow = () => {
         if (result?.success && result?.data) {
           const data = result.data;
           setVerificationData(data);
-          setBackendValidated(true);
+
+          // Restore candidate's selected language from MongoDB (or local fallback)
+          const savedLang = data.selectedLanguage || 'en';
+          setSelectedLanguage(savedLang);
+          try {
+            localStorage.setItem(`record_${token}_lang`, savedLang);
+          } catch (e) { }
 
           // Restore saved responses from MongoDB GridFS
           if (Array.isArray(data.responses) && data.responses.length > 0) {
@@ -229,11 +259,31 @@ export const VerificationFlow = () => {
             );
           }
 
-          // If on root token URL with no step, resume from MongoDB saved step
-          if (!step && data.currentStep) {
-            const resumeSlug = STEP_TO_ROUTE[data.currentStep] || 'language';
-            navigate(`/verify/${token}/${resumeSlug}`, { replace: true });
+          const savedQNum =
+            data.currentQuestion && data.currentQuestion >= 1 && data.currentQuestion <= QUESTIONS.length
+              ? data.currentQuestion
+              : 1;
+          if (!qIdx) {
+            setCurrentQuestionIndex(savedQNum - 1);
           }
+
+          // Resume at MongoDB saved step across any browser when opening root link OR default /language entry link
+          const QUESTION_STEPS = new Set(['scenario_prompt', 'recording', 'review_single']);
+          const shouldResumeFromSaved =
+            data.currentStep &&
+            (!step || (step === 'language' && data.currentStep !== 'language'));
+
+          if (shouldResumeFromSaved) {
+            const resumeSlug = STEP_TO_ROUTE[data.currentStep] || 'language';
+            const resumePath = QUESTION_STEPS.has(data.currentStep)
+              ? `/verify/${token}/${resumeSlug}/${savedQNum}`
+              : `/verify/${token}/${resumeSlug}`;
+            setBackendValidated(true);
+            router.replace(resumePath);
+            return;
+          }
+
+          setBackendValidated(true);
         }
       } catch (err) {
         console.warn('[Verification] Backend validation offline or failed:', err.message);
@@ -245,7 +295,7 @@ export const VerificationFlow = () => {
     return () => {
       isMounted = false;
     };
-  }, [token, navigate, setToken, setVerificationData]);
+  }, [token, router, setToken, setVerificationData, setSelectedLanguage]);
 
   // Keep question index updated if qIdx URL parameter changes
   useEffect(() => {
@@ -257,8 +307,9 @@ export const VerificationFlow = () => {
     }
   }, [qIdx]);
 
-  // Persist current step on change so refreshing keeps the candidate on the exact same page
+  // Persist current step on change ONLY AFTER backend session validation finishes (prevents overwriting saved progress across browsers)
   useEffect(() => {
+    if (!backendValidated) return;
     try {
       if (effectiveStep && effectiveStep !== 'invalid' && effectiveStep !== 'already_completed') {
         sessionStorage.setItem(`record_${token || 'default'}_step`, effectiveStep);
@@ -268,15 +319,17 @@ export const VerificationFlow = () => {
         if (token && token !== 'invalid' && token !== 'completed') {
           verificationService.updateProgress(token, {
             currentStep: effectiveStep,
-            currentQuestion: targetQIdx + 1
+            currentQuestion: targetQIdx + 1,
+            selectedLanguage
           });
         }
       }
     } catch (e) { }
-  }, [effectiveStep, token, targetQIdx]);
+  }, [backendValidated, effectiveStep, token, targetQIdx, selectedLanguage]);
 
   // Persist question index on change
   useEffect(() => {
+    if (!storageHydratedRef.current) return;
     try {
       sessionStorage.setItem(`record_${token || 'default'}_q_idx`, targetQIdx.toString());
       localStorage.setItem(`record_${token || 'default'}_q_idx`, targetQIdx.toString());
@@ -285,6 +338,7 @@ export const VerificationFlow = () => {
 
   // Persist responses on change
   useEffect(() => {
+    if (!storageHydratedRef.current) return;
     try {
       sessionStorage.setItem(`record_${token || 'default'}_responses`, JSON.stringify(recordedResponses));
       localStorage.setItem(`record_${token || 'default'}_responses`, JSON.stringify(recordedResponses));
@@ -298,13 +352,25 @@ export const VerificationFlow = () => {
       const targetPath = questionNum
         ? `/verify/${token}/${routeSlug}/${questionNum}`
         : `/verify/${token}/${routeSlug}`;
-      navigate(targetPath);
+      router.push(targetPath);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     },
-    [navigate, token]
+    [router, token]
   );
 
-  const handleLanguageContinue = () => {
+  const handleSelectLanguage = (langId) => {
+    setSelectedLanguage(langId);
+    try {
+      localStorage.setItem(`record_${token || 'default'}_lang`, langId);
+    } catch (e) { }
+    if (token && token !== 'invalid' && token !== 'completed') {
+      verificationService.updateProgress(token, { selectedLanguage: langId });
+    }
+  };
+
+  const handleLanguageContinue = (payload) => {
+    const langId = payload?.language || selectedLanguage || 'en';
+    handleSelectLanguage(langId);
     goToStep('instructions');
   };
 
@@ -312,7 +378,16 @@ export const VerificationFlow = () => {
     goToStep('permissions');
   };
 
-  const handlePermissionsGranted = () => {
+  const handlePermissionsGranted = async (permData) => {
+    if (token && token !== 'invalid' && token !== 'completed' && permData) {
+      await verificationService.updateProgress(token, {
+        permissions: {
+          camera: permData.camera ? 'granted' : 'denied',
+          microphone: permData.microphone ? 'granted' : 'denied',
+          location: permData.location ? 'granted' : 'denied'
+        }
+      });
+    }
     goToStep('ready');
   };
 
@@ -346,6 +421,7 @@ export const VerificationFlow = () => {
             duration: formattedDuration,
             durationSeconds,
             previewUrl: localPreviewUrl,
+            videoUrl: videoBlob ? null : r.videoUrl,
             uploadStatus: videoBlob ? 'uploading' : r.uploadStatus || 'pending'
           }
           : r
@@ -360,7 +436,7 @@ export const VerificationFlow = () => {
       goToStep('review_single', questionNumber);
     }
 
-    // Upload actual video recording to MongoDB GridFS
+    // Upload actual video recording to AWS S3 via presigned URL
     if (videoBlob && token && token !== 'invalid' && token !== 'completed') {
       try {
         setUploadingQuestion(questionNumber);
@@ -372,21 +448,26 @@ export const VerificationFlow = () => {
         );
 
         if (result?.success) {
+          const presignedUrl = await videoService
+            .getPresignedVideoUrl(token, questionNumber)
+            .catch(() => '');
           setRecordedResponses((prev) =>
             prev.map((r) =>
               r.questionNumber === questionNumber
                 ? {
                   ...r,
                   uploadStatus: 'completed',
-                  gridFsFileId: result.data?.fileId,
-                  videoUrl: videoService.getVideoUrl(token, questionNumber)
+                  storageProvider: result.data?.storageProvider || 's3',
+                  s3Key: result.data?.s3Key || null,
+                  gridFsFileId: result.data?.fileId || null,
+                  videoUrl: presignedUrl || videoService.getVideoUrl(token, questionNumber)
                 }
                 : r
             )
           );
         }
       } catch (err) {
-        console.error(`[Upload] Failed to upload Q${questionNumber} video to GridFS:`, err);
+        console.error(`[Upload] Failed to upload Q${questionNumber} video to AWS S3:`, err);
         setRecordedResponses((prev) =>
           prev.map((r) =>
             r.questionNumber === questionNumber
@@ -583,6 +664,7 @@ export const VerificationFlow = () => {
     <div className="relative min-h-screen w-full bg-[#F8F6F1]">
       <VerificationContainer
         header={true}
+        onSelectLanguage={handleSelectLanguage}
         onChangeLanguage={() => {
           goToStep('language');
         }}

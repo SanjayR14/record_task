@@ -1,31 +1,44 @@
-import React, { useState } from 'react';
-import { Globe, HelpCircle, Languages, X } from 'lucide-react';
-// The SVG already contains: "Record ✓", "Skill verification process" and "Powered by record".
-import recordLockup from '../../assets/record-lockup.svg';
+'use client';
+
+import React, { useState, useContext } from 'react';
+import { Globe, HelpCircle, Languages, X, Check } from 'lucide-react';
+import recordLockup from '@/assets/record-lockup.svg';
+import VerificationContext from '@/context/VerificationContext';
+import { LANGUAGES, getLanguageConfig, getTranslations } from '@/i18n/translations';
 
 /**
  * Record verification header
- * - Full-width black bar, content centred and capped at max-w-2xl
- * - Row 1: "R" avatar + brand lockup SVG (scales with screen width)
- * - Row 2: Change Language (muted on language screen, active on others) + Need Help (active)
- * - Row 3: Step progress segments (0 initially, fills with #FF5723 upon progression)
- * - Fixed static position at top of viewport so scrolling content hides underneath
  */
 export const VerificationHeader = ({
   onChangeLanguage,
+  onSelectLanguage,
   onNeedHelp,
   totalSteps = 5,
-  currentStep = 0, // number of active/completed segments to highlight (0 to totalSteps)
+  currentStep = 0,
   isLanguageScreen = false,
   isAlreadyCompletedScreen = false
 }) => {
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
 
+  const ctx = useContext(VerificationContext);
+  const activeLang = ctx?.langConfig || getLanguageConfig('en');
+  const t = ctx?.t || getTranslations('en');
+
   const pillBase =
     'min-w-0 w-full flex items-center justify-center gap-2 rounded-xl border ' +
     'h-11 sm:h-12 px-3 text-sm sm:text-[15px] font-medium transition-colors cursor-pointer ' +
     'focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60';
+
+  const handleOpenLanguagePicker = () => {
+    if (onSelectLanguage) {
+      setShowLanguageModal(true);
+    } else if (onChangeLanguage) {
+      onChangeLanguage();
+    } else {
+      setShowLanguageModal(true);
+    }
+  };
 
   return (
     <>
@@ -40,29 +53,23 @@ export const VerificationHeader = ({
               R
             </div>
             <img
-              src={recordLockup}
+              src={recordLockup?.src || recordLockup}
               alt="Record – Skill verification process. Powered by Record"
               className="flex-1 min-w-0 h-auto w-full max-w-[340px] sm:max-w-[380px]"
               draggable={false}
             />
           </div>
 
-          {/* Action pills: on already completed screen, only Change Language is shown full-width */}
+          {/* Action pills */}
           {isAlreadyCompletedScreen ? (
             <div>
               <button
                 type="button"
-                onClick={() => {
-                  if (onChangeLanguage) {
-                    onChangeLanguage();
-                  } else {
-                    setShowLanguageModal(true);
-                  }
-                }}
+                onClick={handleOpenLanguagePicker}
                 className={`${pillBase} bg-[#262626] border-[#3a3a3a] text-neutral-100 hover:bg-[#2e2e2e] active:bg-[#363636]`}
               >
                 <Languages className="w-5 h-5 flex-shrink-0" />
-                <span className="truncate">Change Language</span>
+                <span className="truncate">{t.header.changeLanguage}</span>
               </button>
             </div>
           ) : (
@@ -72,11 +79,7 @@ export const VerificationHeader = ({
                 disabled={isLanguageScreen}
                 onClick={() => {
                   if (isLanguageScreen) return;
-                  if (onChangeLanguage) {
-                    onChangeLanguage();
-                  } else {
-                    setShowLanguageModal(true);
-                  }
+                  handleOpenLanguagePicker();
                 }}
                 className={`${pillBase} ${
                   isLanguageScreen
@@ -85,7 +88,7 @@ export const VerificationHeader = ({
                 }`}
               >
                 <Languages className="w-5 h-5 flex-shrink-0" />
-                <span className="truncate">Change Language</span>
+                <span className="truncate">{t.header.changeLanguage}</span>
               </button>
 
               <button
@@ -94,7 +97,7 @@ export const VerificationHeader = ({
                 className={`${pillBase} bg-[#262626] border-[#3a3a3a] text-neutral-100 hover:bg-[#2e2e2e] active:bg-[#363636]`}
               >
                 <HelpCircle className="w-5 h-5 flex-shrink-0" />
-                <span className="truncate">Need Help</span>
+                <span className="truncate">{t.header.needHelp}</span>
               </button>
             </div>
           )}
@@ -135,7 +138,7 @@ export const VerificationHeader = ({
             <div className="flex items-center justify-between border-b pb-3">
               <div className="flex items-center space-x-2">
                 <HelpCircle className="w-5 h-5 text-[#FF5723]" />
-                <h3 className="font-bold text-slate-900 text-base">Candidate Support</h3>
+                <h3 className="font-bold text-slate-900 text-base">{t.header.supportTitle}</h3>
               </div>
               <button
                 type="button"
@@ -148,21 +151,17 @@ export const VerificationHeader = ({
             </div>
             <div className="text-xs text-slate-600 space-y-2.5 leading-relaxed">
               <p>
-                <strong>Need help with your verification?</strong>
+                <strong>{t.header.supportHeading}</strong>
               </p>
-              <p>
-                Make sure you have allowed camera and microphone permissions in your mobile or desktop browser.
-              </p>
-              <p>
-                For technical issues or link expiration, contact your Quess Corp recruiter directly on WhatsApp.
-              </p>
+              <p>{t.header.supportBody1}</p>
+              <p>{t.header.supportBody2}</p>
             </div>
             <button
               type="button"
               onClick={() => setShowHelpModal(false)}
               className="w-full py-2.5 bg-[#FF5723] text-white text-xs font-semibold rounded-xl cursor-pointer hover:bg-[#F4511E]"
             >
-              Back to Verification
+              {t.header.backToVerification}
             </button>
           </div>
         </div>
@@ -175,20 +174,65 @@ export const VerificationHeader = ({
           aria-modal="true"
           className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
         >
-          <div className="w-full max-w-sm bg-white rounded-2xl p-5 space-y-4 shadow-xl text-center">
-            <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto">
-              <Globe className="w-6 h-6" />
+          <div className="w-full max-w-sm bg-white rounded-2xl p-5 space-y-4 shadow-xl">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div className="flex items-center space-x-2">
+                <Globe className="w-5 h-5 text-[#FF5723]" />
+                <h3 className="font-bold text-slate-900 text-base">{t.header.languageModalTitle}</h3>
+              </div>
+              <button
+                type="button"
+                aria-label="Close"
+                onClick={() => setShowLanguageModal(false)}
+                className="p-1 rounded-full text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
-            <h3 className="font-bold text-slate-900 text-base">Language Options</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              For this onboarding task, only <strong>English</strong> is currently active and selectable.
-            </p>
+
+            <p className="text-xs text-slate-500">{t.header.languageModalSubtitle}</p>
+
+            <div className="grid grid-cols-2 gap-2.5">
+              {LANGUAGES.map((lang) => {
+                const isSelected = activeLang.id === lang.id;
+                return (
+                  <button
+                    key={lang.id}
+                    type="button"
+                    onClick={() => {
+                      if (onSelectLanguage) onSelectLanguage(lang.id);
+                      else if (ctx?.setSelectedLanguage) ctx.setSelectedLanguage(lang.id);
+                      setShowLanguageModal(false);
+                    }}
+                    className={`relative flex items-center gap-2.5 p-2.5 rounded-xl border text-left cursor-pointer transition-colors ${
+                      isSelected
+                        ? 'border-[#00A63E] bg-emerald-50/40'
+                        : 'border-stone-200 bg-white hover:bg-stone-50'
+                    }`}
+                  >
+                    <span className="flex-shrink-0 w-9 h-9 rounded-lg bg-[#EEF0F8] text-[#3B5BDB] flex items-center justify-center text-sm font-extrabold">
+                      {lang.code}
+                    </span>
+                    <span className="min-w-0 flex flex-col">
+                      <span className="text-xs font-bold text-slate-900 truncate">{lang.name}</span>
+                      <span className="text-[10px] text-slate-400 truncate">{lang.sub}</span>
+                    </span>
+                    {isSelected && (
+                      <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-[#00A63E] text-white flex items-center justify-center">
+                        <Check className="w-2.5 h-2.5" strokeWidth={3} />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
             <button
               type="button"
               onClick={() => setShowLanguageModal(false)}
-              className="w-full py-2.5 bg-[#FF5723] text-white text-xs font-semibold rounded-xl cursor-pointer hover:bg-[#F4511E]"
+              className="w-full py-2.5 bg-stone-100 hover:bg-stone-200 text-slate-700 text-xs font-semibold rounded-xl cursor-pointer"
             >
-              Continue in English
+              {t.header.close}
             </button>
           </div>
         </div>

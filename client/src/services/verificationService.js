@@ -42,6 +42,18 @@ export const verificationService = {
   },
 
   /**
+   * Saves GPS coordinates and resolves accurate PIN code on backend
+   * POST /api/verifications/:token/location
+   * @param {string} token
+   * @param {Object} coords - { latitude, longitude, accuracy }
+   * @returns {Promise<Object>}
+   */
+  async saveLocation(token, coords) {
+    const response = await api.post(`/verifications/${token}/location`, coords);
+    return response;
+  },
+
+  /**
    * Submits all 3 recorded answers and finishes the verification
    * POST /api/verifications/:token/finish
    * @param {string} token

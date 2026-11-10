@@ -3,7 +3,7 @@ import axios from 'axios';
 /**
  * Centralized Axios API client
  */
-const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const baseURL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
 
 const api = axios.create({
   baseURL,

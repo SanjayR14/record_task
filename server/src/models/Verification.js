@@ -12,6 +12,19 @@ const responseSchema = new mongoose.Schema(
       min: 1,
       max: 3
     },
+    storageProvider: {
+      type: String,
+      enum: ['s3', 'gridfs'],
+      default: 's3'
+    },
+    s3Bucket: {
+      type: String,
+      default: null
+    },
+    s3Key: {
+      type: String,
+      default: null
+    },
     gridFsFileId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'videos.files',
@@ -97,6 +110,21 @@ const verificationSchema = new mongoose.Schema(
         enum: ['unknown', 'requesting', 'granted', 'denied', 'unavailable'],
         default: 'unknown'
       }
+    },
+    locationDetails: {
+      latitude: { type: Number, default: null },
+      longitude: { type: Number, default: null },
+      accuracy: { type: Number, default: null },
+      pincode: { type: String, default: null },
+      pincodeVerified: { type: Boolean, default: false },
+      postOffice: { type: String, default: null },
+      district: { type: String, default: null },
+      city: { type: String, default: null },
+      state: { type: String, default: null },
+      country: { type: String, default: null },
+      formattedAddress: { type: String, default: null },
+      source: { type: String, default: null },
+      capturedAt: { type: Date, default: null }
     },
     currentQuestion: {
       type: Number,

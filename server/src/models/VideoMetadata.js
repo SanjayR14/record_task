@@ -18,9 +18,24 @@ const videoMetadataSchema = new mongoose.Schema(
       min: 1,
       max: 3
     },
+    storageProvider: {
+      type: String,
+      enum: ['s3', 'gridfs'],
+      default: 's3'
+    },
+    s3Bucket: {
+      type: String,
+      default: null
+    },
+    s3Key: {
+      type: String,
+      default: null,
+      index: true
+    },
     gridFsFileId: {
       type: mongoose.Schema.Types.ObjectId,
-      required: true,
+      required: false,
+      default: null,
       index: true
     },
     filename: {

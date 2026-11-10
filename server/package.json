@@ -11,9 +11,12 @@
     "reset:verification": "node src/scripts/resetVerification.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1165.0",
+    "@aws-sdk/s3-request-presigner": "^3.1165.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "google-translate-api-x": "^10.7.3",
     "mongoose": "^8.9.5",
     "multer": "^2.5.0"
   },

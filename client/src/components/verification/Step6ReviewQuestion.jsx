@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
+'use client';
+
+import React, { useState, useContext } from 'react';
 import { Play, Pause } from 'lucide-react';
 import ReadAgainButton from '@/components/common/ReadAgainButton';
 import redoIcon from '@/assets/Redo.svg';
+import VerificationContext from '@/context/VerificationContext';
+import { getTranslations } from '@/i18n/translations';
 
 export const Step6ReviewQuestion = ({
   questionNumber = 1,
@@ -11,6 +15,8 @@ export const Step6ReviewQuestion = ({
   onContinue
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
+  const ctx = useContext(VerificationContext);
+  const t = ctx?.t || getTranslations();
 
   return (
     <div className="flex flex-col w-full space-y-4 pb-6">
@@ -34,7 +40,7 @@ export const Step6ReviewQuestion = ({
                 </button>
                 <div>
                   <span className="text-xs font-semibold text-gray-600 block">
-                    Scenario Q{questionNumber} · your answer
+                    {t.common.scenarioLabel} Q{questionNumber} · {t.common.yourAnswer}
                   </span>
                 </div>
               </div>
@@ -65,7 +71,7 @@ export const Step6ReviewQuestion = ({
             )}
 
             <div className="pt-1 pb-1">
-              <p className="text-medium font-semibold text-slate-700">Got it, saved.</p>
+              <p className="text-medium font-semibold text-slate-700">{t.common.gotItSaved}</p>
             </div>
           </div>
 
@@ -76,12 +82,12 @@ export const Step6ReviewQuestion = ({
               onClick={onRetake}
               className="inline-flex w-full items-center justify-center gap-2 py-4 px-3.5 rounded-xl bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-xs font-semibold text-slate-800 transition-colors cursor-pointer"
             >
-              <img src={redoIcon} alt="" className="w-3.5 h-3.5 shrink-0" draggable={false} />
-              <span>Retake video</span>
+              <img src={redoIcon?.src || redoIcon} alt="" className="w-3.5 h-3.5 shrink-0" draggable={false} />
+              <span>{t.common.retakeVideo}</span>
             </button>
 
             <span className="text-sm text-[#71717A]">
-              You can retake anytime before you submit
+              {t.step6.retakeHint}
             </span>
           </div>
         </div>
@@ -89,9 +95,9 @@ export const Step6ReviewQuestion = ({
         {/* Assistant Bubble */}
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-stone-200/60 max-w-[92%] space-y-1.5">
           <p className="text-medium sm:text-sm font-semibold text-slate-800 leading-relaxed">
-            Your response for Scenario Q{questionNumber} has been saved. If you'd like to retry, simply click the Retake button below the video.
+            {t.step6.savedBubble(questionNumber)}
           </p>
-          <ReadAgainButton text={`Your response for Scenario Q${questionNumber} has been saved. If you'd like to retry, simply click the Retake button below the video.`} />
+          <ReadAgainButton text={t.step6.savedBubble(questionNumber)} />
         </div>
       </div>
 
@@ -102,7 +108,7 @@ export const Step6ReviewQuestion = ({
           onClick={onContinue}
           className="w-full py-3.5 px-4 bg-[#FF5723] hover:bg-[#F4511E] active:bg-[#E64A19] text-white font-semibold text-sm rounded-xl shadow-md transition-all active:scale-[0.99] flex items-center justify-center cursor-pointer"
         >
-          {questionNumber < 3 ? 'Continue to Next Scenario' : 'Review All Responses'}
+          {questionNumber < 3 ? t.step6.continueNext : t.step6.reviewAll}
         </button>
       </div>
     </div>

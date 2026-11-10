@@ -1,55 +1,61 @@
-import React, { useState, useEffect } from 'react';
+'use client';
+
+import React, { useState, useEffect, useContext } from 'react';
+import { useParams } from 'next/navigation';
 import { Camera, Mic, MapPin, CheckCircle2, AlertCircle, RotateCcw } from 'lucide-react';
 import usePermissions from '@/hooks/usePermissions';
+import VerificationContext from '@/context/VerificationContext';
+import { getLanguageConfig, getTranslations } from '@/i18n/translations';
+import { speakText, stopSpeech } from '@/utils/speech';
 
 export const Step3Permissions = ({ onGrantPermissions }) => {
+  const params = useParams();
+  const token = params?.token;
+  const ctx = useContext(VerificationContext);
+  const langConfig = ctx?.langConfig || getLanguageConfig('en');
+  const t = ctx?.t || getTranslations('en');
+  const isTranslating = Boolean(ctx?.isTranslating);
+
   const {
     cameraStatus,
     microphoneStatus,
     locationStatus,
+    locationDetails,
+    isResolvingPincode,
     isRequesting,
     errorMessage,
     canProceed,
     requestPermissions,
     retryPermissions
-  } = usePermissions();
+  } = usePermissions(token);
 
   const [hasReadText, setHasReadText] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
 
-  const promptText =
-    "Okay... I think you are ready now. Before we start, I'll need your camera and mic, that's how you'll answer the questions on video.";
+  const promptText = t.step3.promptSpeech;
 
-  // Automatically read the text fully on page mount without needing manual button click
+  // Automatically read the text fully on page mount in the selected language
   useEffect(() => {
+    if (isTranslating) return;
+
     setIsSpeaking(true);
     setHasReadText(false);
 
-    // Speak using Web Speech API
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(promptText);
-      utterance.rate = 0.95;
-      utterance.pitch = 1.0;
-      utterance.lang = 'en-US';
-
-      utterance.onend = () => {
+    speakText({
+      text: promptText,
+      langId: langConfig.id,
+      ttsLang: langConfig.ttsLang,
+      onStart: () => setIsSpeaking(true),
+      onEnd: () => {
         setIsSpeaking(false);
         setHasReadText(true);
-      };
-
-      try {
-        window.speechSynthesis.speak(utterance);
-        if (window.speechSynthesis.paused) {
-          window.speechSynthesis.resume();
-        }
-      } catch (e) {
-        // Fallback handled by readTimer
+      },
+      onCancel: () => {
+        setIsSpeaking(false);
       }
-    }
+    });
 
-    // The text is 24 words (~5 seconds reading time).
-    // Ensure the text reads fully before enabling Grant Access.
+    // Safety fallback timer to unlock Grant Access even if browser blocks autoplay audio
     const readTimer = setTimeout(() => {
       setIsSpeaking(false);
       setHasReadText(true);
@@ -57,13 +63,11 @@ export const Step3Permissions = ({ onGrantPermissions }) => {
 
     return () => {
       clearTimeout(readTimer);
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
+      stopSpeech();
     };
-  }, []);
+  }, [promptText, langConfig.id, langConfig.ttsLang, isTranslating]);
 
-  // When both mandatory permissions are granted, smoothly proceed to the next step
+  // When all mandatory permissions (camera, microphone, location + PIN code) are granted, proceed smoothly
   const handleGrant = async () => {
     if (!hasReadText || isRequesting) return;
 
@@ -71,17 +75,18 @@ export const Step3Permissions = ({ onGrantPermissions }) => {
     const result = await requestPermissions();
 
     if (result.success) {
-      // Both camera and microphone granted!
-      // Give a brief 500ms pause so the candidate sees the green Allowed checkmarks
+      // Camera, microphone, and location + PIN code granted!
+      // Brief pause so candidate sees green Allowed checkmarks and detected PIN code
       setTimeout(() => {
         if (onGrantPermissions) {
           onGrantPermissions({
             camera: true,
             microphone: true,
-            location: result.location?.status === 'granted'
+            location: true,
+            locationDetails: result.location?.locationDetails || null
           });
         }
-      }, 500);
+      }, 800);
     }
   };
 
@@ -93,10 +98,11 @@ export const Step3Permissions = ({ onGrantPermissions }) => {
           onGrantPermissions({
             camera: true,
             microphone: true,
-            location: result.location?.status === 'granted'
+            location: true,
+            locationDetails: result.location?.locationDetails || null
           });
         }
-      }, 500);
+      }, 800);
     }
   };
 
@@ -104,7 +110,9 @@ export const Step3Permissions = ({ onGrantPermissions }) => {
     cameraStatus === 'denied' ||
     cameraStatus === 'unavailable' ||
     microphoneStatus === 'denied' ||
-    microphoneStatus === 'unavailable';
+    microphoneStatus === 'unavailable' ||
+    locationStatus === 'denied' ||
+    locationStatus === 'unavailable';
 
   // Dynamic status badge renderer preserving exact Figma visual design
   const renderStatusBadge = (status, isMandatory = true) => {
@@ -112,31 +120,31 @@ export const Step3Permissions = ({ onGrantPermissions }) => {
       case 'granted':
         return (
           <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-            <CheckCircle2 className="w-3 h-3" /> Allowed
+            <CheckCircle2 className="w-3 h-3" /> {t.step3.badges.granted}
           </span>
         );
       case 'requesting':
         return (
           <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-xl border border-amber-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" /> Requesting...
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" /> {t.step3.badges.requesting}
           </span>
         );
       case 'denied':
         return (
           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-xl border border-rose-100 uppercase tracking-wider">
-            <AlertCircle className="w-3 h-3" /> Denied
+            <AlertCircle className="w-3 h-3" /> {t.step3.badges.denied}
           </span>
         );
       case 'unavailable':
         return (
           <span className="inline-flex items-center gap-1 text-[10px] font-medium text-stone-500 bg-stone-100 px-2.5 py-1 rounded-xl">
-            Unavailable
+            {t.step3.badges.unavailable}
           </span>
         );
       default:
         return isMandatory ? (
           <span className="text-[10px] font-bold text-[#FF502B] bg-[#FFF0EE] px-2.5 py-1 rounded-xl tracking-wider">
-            Required
+            {t.step3.badges.required}
           </span>
         ) : (
           <span className="text-[10px] font-medium text-[#9A9A9A] bg-slate-100 px-3.5 py-1 rounded-xl">
@@ -152,12 +160,10 @@ export const Step3Permissions = ({ onGrantPermissions }) => {
         {/* Assistant Bubble */}
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-stone-200/60 max-w-[92%] space-y-1.5">
           <p className="text-lg sm:text-xl text-slate-900 leading-relaxed ">
-            Okay... I think you are ready now. Before we start, I'll need your{" "}
-            <strong className="font-bold">camera and mic</strong>, that's how you'll
-            answer the questions on video.
+            {t.step3.promptSpeech}
           </p>
           <div className="flex items-center justify-between pt-0.5">
-            <p className="text-[11px] text-slate-500 font-medium">Access required</p>
+            <p className="text-[11px] text-slate-500 font-medium">{t.step3.accessRequired}</p>
           </div>
         </div>
 
@@ -170,7 +176,7 @@ export const Step3Permissions = ({ onGrantPermissions }) => {
                 <Camera className="w-4 h-4" />
               </div>
               <div>
-                <span className="text-xs font-semibold text-slate-800 block">Camera</span>
+                <span className="text-xs font-semibold text-slate-800 block">{t.step3.camera}</span>
               </div>
             </div>
             {renderStatusBadge(cameraStatus, true)}
@@ -183,23 +189,38 @@ export const Step3Permissions = ({ onGrantPermissions }) => {
                 <Mic className="w-4 h-4" />
               </div>
               <div>
-                <span className="text-xs font-semibold text-slate-800 block">Microphone</span>
+                <span className="text-xs font-semibold text-slate-800 block">{t.step3.microphone}</span>
               </div>
             </div>
             {renderStatusBadge(microphoneStatus, true)}
           </div>
 
-          {/* Location Permission Item */}
+          {/* Location Permission Item (Mandatory + PIN code resolution) */}
           <div className="bg-white rounded-xl p-3.5 shadow-sm border border-stone-200/60 flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
+              <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-red-500">
                 <MapPin className="w-4 h-4" />
               </div>
               <div>
-                <span className="text-xs font-semibold text-slate-800 block">Location</span>
+                <span className="text-xs font-semibold text-slate-800 block">{t.step3.location}</span>
+                {isResolvingPincode && (
+                  <span className="text-[10px] text-amber-600 font-medium block">
+                    {t.step3.detectingPin}
+                  </span>
+                )}
+                {!isResolvingPincode && locationDetails?.pincode && (
+                  <span className="text-[11px] text-emerald-700 font-semibold block">
+                    {t.step3.pinLabel}: {locationDetails.pincode}
+                    {locationDetails.postOffice
+                      ? ` · ${locationDetails.postOffice}`
+                      : locationDetails.city
+                        ? ` · ${locationDetails.city}`
+                        : ''}
+                  </span>
+                )}
               </div>
             </div>
-            {renderStatusBadge(locationStatus, false)}
+            {renderStatusBadge(locationStatus, true)}
           </div>
         </div>
 
@@ -208,11 +229,11 @@ export const Step3Permissions = ({ onGrantPermissions }) => {
           <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-xs leading-relaxed space-y-1.5 animate-fadeIn shadow-sm">
             <div className="flex items-center gap-1.5 font-bold text-rose-700">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>Permission Required</span>
+              <span>{t.step3.permissionRequiredTitle}</span>
             </div>
             <p>{errorMessage}</p>
             <p className="text-[11px] text-rose-600">
-              If previously blocked, click the lock or camera icon in your browser address bar to allow permissions, then click Retry below.
+              {t.step3.permissionHint}
             </p>
           </div>
         )}
@@ -228,7 +249,7 @@ export const Step3Permissions = ({ onGrantPermissions }) => {
             className="w-full py-3.5 px-4 bg-[#FF5723] hover:bg-[#F4511E] active:bg-[#E64A19] text-white font-semibold text-sm rounded-xl shadow-md transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
           >
             <RotateCcw className="w-4 h-4" />
-            <span>{isRequesting ? 'Requesting access...' : 'Retry Permission Access'}</span>
+            <span>{isRequesting ? t.step3.requestingAccess : t.step3.retryAccess}</span>
           </button>
         ) : (
           <button
@@ -243,20 +264,20 @@ export const Step3Permissions = ({ onGrantPermissions }) => {
               }`}
           >
             {isRequesting ? (
-              'Requesting access...'
+              t.step3.requestingAccess
             ) : canProceed ? (
               <span className="inline-flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4" /> Permissions Granted
+                <CheckCircle2 className="w-4 h-4" /> {t.step3.permissionsGranted}
               </span>
             ) : (
-              'Grant Access'
+              t.step3.grantAccess
             )}
           </button>
         )}
 
         {!hasReadText && !isDeniedOrUnavailable && (
           <p className="text-center text-[11px] text-stone-500 font-medium animate-fadeIn">
-            Please listen to the instructions above to continue
+            {t.step3.listenPromptHint}
           </p>
         )}
       </div>

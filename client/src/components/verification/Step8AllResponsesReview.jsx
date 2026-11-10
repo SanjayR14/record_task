@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
-import { Play, RotateCcw } from 'lucide-react';
+'use client';
+
+import React, { useState, useContext } from 'react';
+import { Play } from 'lucide-react';
 import ReadAgainButton from '@/components/common/ReadAgainButton';
 import redoIcon from '@/assets/Redo.svg';
+import VerificationContext from '@/context/VerificationContext';
+import { getTranslations } from '@/i18n/translations';
 
 export const Step8AllResponsesReview = ({
   responses = [
@@ -13,6 +17,8 @@ export const Step8AllResponsesReview = ({
   onFinish
 }) => {
   const [playingId, setPlayingId] = useState(null);
+  const ctx = useContext(VerificationContext);
+  const t = ctx?.t || getTranslations();
 
   return (
     <div className="flex flex-col w-full space-y-4 pb-6">
@@ -20,9 +26,9 @@ export const Step8AllResponsesReview = ({
         {/* Assistant Bubble 1 */}
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-stone-200/60 max-w-[92%] space-y-1">
           <p className="text-medium sm:text-sm font-semibold text-slate-800 leading-snug">
-            Your responses for Scenario Q1, Q2, and Q3 have been saved.
+            {t.step8.allSavedBubble}
           </p>
-          <ReadAgainButton text="Your responses for Scenario Q1, Q2, and Q3 have been saved." />
+          <ReadAgainButton text={t.step8.allSavedBubble} />
         </div>
 
         {/* 3 Response Cards */}
@@ -44,7 +50,7 @@ export const Step8AllResponsesReview = ({
                       <Play className="w-3.5 h-3.5 ml-0.5" />
                     </button>
                     <span className="text-medium font-medium text-[#71717A] ">
-                      Scenario Q{resp.questionNumber} . your answer
+                      {t.common.scenarioLabel} Q{resp.questionNumber} · {t.common.yourAnswer}
                     </span>
                   </div>
                   <span className="text-xs font-mono text-slate-400 font-medium">
@@ -77,8 +83,8 @@ export const Step8AllResponsesReview = ({
                     onClick={() => onRetakeQuestion && onRetakeQuestion(resp.questionNumber)}
                     className="inline-flex items-center gap-1.5 py-2 px-3 rounded-md text-[11px] font-semibold text-slate-600 hover:text-slate-900 transition-colors"
                   >
-                    <img src={redoIcon} alt="" className="w-3.5 h-3.5 shrink-0" draggable={false} />
-                    <span className='font-semibold text-black'>Retake video</span>
+                    <img src={redoIcon?.src || redoIcon} alt="" className="w-3.5 h-3.5 shrink-0" draggable={false} />
+                    <span className='font-semibold text-black'>{t.common.retakeVideo}</span>
                   </button>
                 </div>
               </div>
@@ -89,17 +95,17 @@ export const Step8AllResponsesReview = ({
         {/* Assistant Bubble 2 */}
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-stone-200/60 max-w-[92%] space-y-1">
           <p className="text-medium font-semibold sm:text-sm text-slate-800 leading-relaxed">
-            To retry, click the Retake button below the video.
+            {t.step8.retryBubble}
           </p>
-          <ReadAgainButton text="To retry, click the Retake button below the video." />
+          <ReadAgainButton text={t.step8.retryBubble} />
         </div>
 
         {/* Assistant Bubble 3 */}
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-stone-200/60 max-w-[92%] space-y-1">
           <p className="text-medium font-semibold sm:text-sm text-slate-800 leading-relaxed">
-            If you are good to go, please click on finish and complete your verification.
+            {t.step8.finishBubble}
           </p>
-          <ReadAgainButton text="If you are good to go, please click on finish and complete your verification." />
+          <ReadAgainButton text={t.step8.finishBubble} />
         </div>
       </div>
 
@@ -110,7 +116,7 @@ export const Step8AllResponsesReview = ({
           onClick={onFinish}
           className="w-full py-3.5 px-4 bg-[#FF5723] hover:bg-[#F4511E] active:bg-[#E64A19] text-white font-semibold text-sm rounded-xl shadow-md transition-all active:scale-[0.99] flex items-center justify-center"
         >
-          Finish
+          {t.common.finish}
         </button>
       </div>
     </div>

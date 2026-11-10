@@ -1,5 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+'use client';
+
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { ChevronDown } from 'lucide-react';
+import VerificationContext from '@/context/VerificationContext';
+import { getTranslations } from '@/i18n/translations';
 
 const getSupportedMimeType = () => {
   const types = [
@@ -24,6 +28,31 @@ export const Step5Recording = ({
   stream = null,
   onStopRecording,
 }) => {
+  const ctx = useContext(VerificationContext);
+  const t = ctx?.t || getTranslations();
+  const langId = ctx?.langConfig?.id || 'en';
+  const translateDynamicTexts = ctx?.translateDynamicTexts;
+  const defaultTranslated = t.step7.questions[questionNumber - 1];
+  const [displayQuestion, setDisplayQuestion] = useState(defaultTranslated || questionText);
+
+  useEffect(() => {
+    let active = true;
+    if (langId === 'en') {
+      setDisplayQuestion(questionText || defaultTranslated);
+      return;
+    }
+    if (questionText && translateDynamicTexts) {
+      translateDynamicTexts({ q: questionText }).then((res) => {
+        if (active && res?.q) setDisplayQuestion(res.q);
+      });
+    } else {
+      setDisplayQuestion(defaultTranslated || questionText);
+    }
+    return () => {
+      active = false;
+    };
+  }, [questionText, defaultTranslated, langId, translateDynamicTexts]);
+
   const [seconds, setSeconds] = useState(0);
   const [expanded, setExpanded] = useState(true);
   const videoRef = useRef(null);
@@ -236,7 +265,7 @@ export const Step5Recording = ({
             className="w-full flex items-center justify-between text-sm font-medium text-white/90 cursor-pointer"
           >
             <span>
-              Question {questionNumber} of {totalQuestions}
+              {t.common.questionOf(questionNumber, totalQuestions)}
             </span>
 
             <ChevronDown
@@ -247,7 +276,7 @@ export const Step5Recording = ({
 
           {expanded && (
             <p className="mt-3 text-sm font-semibold leading-relaxed text-white drop-shadow-sm">
-              {questionText}
+              {displayQuestion}
             </p>
           )}
         </div>
@@ -258,7 +287,7 @@ export const Step5Recording = ({
           onClick={handleStop}
           className="w-full py-3.5 bg-[#FF5723] hover:bg-[#F4511E] active:bg-[#E64A19] text-white font-medium text-sm rounded-lg transition-all active:scale-[0.99] shadow-lg cursor-pointer"
         >
-          Stop Recording
+          {t.step5.stopRecording}
         </button>
       </div>
     </div>
