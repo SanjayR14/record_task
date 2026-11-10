@@ -17,13 +17,12 @@ export const config = {
   groqApiKey: process.env.GROQ_API_KEY || '',
   groqModel: process.env.GROQ_MODEL || 'openai/gpt-oss-20b',
   aws: {
-    region: process.env.AWS_REGION || '',
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-    sessionToken: process.env.AWS_SESSION_TOKEN || '',
-    s3Bucket: process.env.AWS_S3_BUCKET || '',
-    s3Prefix: process.env.AWS_S3_KEY_PREFIX || 'verifications',
-    presignedExpiresIn: parseInt(process.env.AWS_S3_PRESIGNED_EXPIRES_IN || '900', 10)
-  }
+  region: process.env.AWS_REGION,
+  s3Bucket: process.env.AWS_S3_BUCKET,
+  s3Prefix: process.env.AWS_S3_KEY_PREFIX || 'verifications',
+  presignedExpiresIn: Number(
+    process.env.AWS_S3_PRESIGNED_EXPIRES_IN || 900
+  )
+}
 };
 
