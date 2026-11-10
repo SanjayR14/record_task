@@ -1,29 +1,20 @@
-import React, { useState } from 'react';
+'use client';
+
+import React, { useContext } from 'react';
 import { Check } from 'lucide-react';
 import ReadAgainButton from '@/components/common/ReadAgainButton';
-
-const GREETING = "Hi! I'm your verification guide from Record.";
+import VerificationContext from '@/context/VerificationContext';
+import { LANGUAGES, getLanguageConfig, getTranslations } from '@/i18n/translations';
 
 export const Step1LanguageSelection = ({ onContinue }) => {
-  const [selectedLanguage, setSelectedLanguage] = useState('English');
-  const [showTooltip, setShowTooltip] = useState(false);
-
-  const languages = [
-    { id: 'en', code: 'A', name: 'English', sub: 'English', enabled: true },
-    { id: 'hi', code: 'अ', name: 'हिन्दी', sub: 'Hindi', enabled: false },
-    { id: 'ta', code: 'அ', name: 'தமிழ்', sub: 'Tamil', enabled: false },
-    { id: 'te', code: 'అ', name: 'తెలుగు', sub: 'Telugu', enabled: false },
-    { id: 'kn', code: 'ಅ', name: 'ಕನ್ನಡ', sub: 'Kannada', enabled: false },
-    { id: 'ml', code: 'അ', name: 'മലയാളം', sub: 'Malayalam', enabled: false },
-  ];
+  const ctx = useContext(VerificationContext);
+  const selectedId = ctx?.langConfig?.id || 'en';
+  const t = ctx?.t || getTranslations();
 
   const handleSelect = (lang) => {
-    if (!lang.enabled) {
-      setShowTooltip(true);
-      setTimeout(() => setShowTooltip(false), 2500);
-      return;
+    if (ctx?.setSelectedLanguage) {
+      ctx.setSelectedLanguage(lang.id);
     }
-    setSelectedLanguage(lang.name);
   };
 
   return (
@@ -32,24 +23,38 @@ export const Step1LanguageSelection = ({ onContinue }) => {
         {/* Bubble 1 – greeting */}
         <div className="bg-white rounded-xl px-4 py-3.5 max-w-[80%] sm:max-w-[70%] space-y-1.5">
           <p className="text-medium sm:text-base font-medium text-slate-900 leading-snug">
-            {GREETING}
+            {t.step1.greeting}
           </p>
-          <ReadAgainButton text={GREETING} />
+          <ReadAgainButton text={t.step1.greeting} />
         </div>
 
         {/* Bubble 2 – question */}
         <div className="bg-white rounded-xl px-4 py-3.5 space-y-1">
-          <h2 className="text-medium sm:text-base font-medium text-slate-900 leading-snug">
-            Which <strong className="font-bold">language</strong> would you like to
-            <br></br>continue in?
+          <h2 className="text-medium sm:text-base font-medium text-black leading-snug">
+            {selectedId === 'en' ? (
+              <>
+                Which <strong className="font-bold text-[#09090B]">language</strong> would you like to
+                <br />
+                continue in?
+              </>
+            ) : (
+              t.step1.questionFull
+            )}
           </h2>
-          <p className="text-xs sm:text-[13px] text-slate-500">Select language</p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs sm:text-[13px] text-slate-500">{t.step1.selectLanguage}</p>
+            {ctx?.isTranslating && (
+              <span className="text-[11px] text-[#FF5723] font-medium animate-pulse">
+                Translating...
+              </span>
+            )}
+          </div>
         </div>
 
-        {/* Language cards */}
+        {/* Language cards (all 6 languages active) */}
         <div className="grid grid-cols-2 gap-4 pt-1" role="radiogroup" aria-label="Language">
-          {languages.map((lang) => {
-            const isSelected = selectedLanguage === lang.name;
+          {LANGUAGES.map((lang) => {
+            const isSelected = selectedId === lang.id;
             return (
               <button
                 key={lang.id}
@@ -83,25 +88,19 @@ export const Step1LanguageSelection = ({ onContinue }) => {
             );
           })}
         </div>
-
-        {showTooltip && (
-          <div
-            role="status"
-            className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-medium"
-          >
-            Only English is available for this verification onboarding task.
-          </div>
-        )}
       </div>
 
       {/* Continue */}
       <div className="pt-2">
         <button
           type="button"
-          onClick={() => onContinue({ language: selectedLanguage })}
+          onClick={() => {
+            const cfg = getLanguageConfig(selectedId);
+            onContinue({ language: cfg.id });
+          }}
           className="w-full py-3.5 px-4 bg-[#FF5723] hover:bg-[#F4511E] active:bg-[#E64A19] text-white font-medium text-base rounded-xl transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5723]/60 focus-visible:ring-offset-2"
         >
-          Continue
+          {t.common.continue}
         </button>
       </div>
     </div>

@@ -1,33 +1,44 @@
-import React, { useState } from 'react';
-import { Volume2, VolumeX } from 'lucide-react';
+'use client';
 
-export const ReadAgainButton = ({ text, label = 'Read again', className = '', onEnd }) => {
+import React, { useState, useContext } from 'react';
+import { Volume2, VolumeX } from 'lucide-react';
+import VerificationContext from '@/context/VerificationContext';
+import { getLanguageConfig, getTranslations } from '@/i18n/translations';
+import { speakText, stopSpeech } from '@/utils/speech';
+
+export const ReadAgainButton = ({ text, label, className = '', onEnd }) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const ctx = useContext(VerificationContext);
+  const langConfig = ctx?.langConfig || getLanguageConfig('en');
+  const t = ctx?.t || getTranslations('en');
+
+  const resolvedLabel =
+    label === 'Listen'
+      ? t.common.listen
+      : label || t.common.readAgain;
 
   const handleSpeak = (e) => {
     e.stopPropagation();
-    if (!('speechSynthesis' in window)) return;
 
     if (isSpeaking) {
-      window.speechSynthesis.cancel();
+      stopSpeech();
       setIsSpeaking(false);
       return;
     }
 
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.95;
-    utterance.onend = () => {
-      setIsSpeaking(false);
-      if (onEnd) onEnd();
-    };
-    utterance.onerror = () => {
-      setIsSpeaking(false);
-      if (onEnd) onEnd();
-    };
-
-    setIsSpeaking(true);
-    window.speechSynthesis.speak(utterance);
+    speakText({
+      text,
+      langId: langConfig.id,
+      ttsLang: langConfig.ttsLang,
+      onStart: () => setIsSpeaking(true),
+      onEnd: () => {
+        setIsSpeaking(false);
+        if (onEnd) onEnd();
+      },
+      onCancel: () => {
+        setIsSpeaking(false);
+      }
+    });
   };
 
   return (
@@ -42,10 +53,9 @@ export const ReadAgainButton = ({ text, label = 'Read again', className = '', on
       ) : (
         <Volume2 className="w-3.5 h-3.5 text-[#71717A]" />
       )}
-      <span className="text-[#71717A]">{isSpeaking ? 'Stop reading' : label}</span>
+      <span className="text-[#71717A]">{isSpeaking ? t.common.stopReading : resolvedLabel}</span>
     </button>
   );
 };
 
 export default ReadAgainButton;
-

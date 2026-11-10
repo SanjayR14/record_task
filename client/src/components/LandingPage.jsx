@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -63,7 +65,7 @@ export const LandingPage = () => {
             </p>
           </div>
 
-          <Link to="/verify/demo-candidate-2026" className="w-full sm:w-auto flex-shrink-0">
+          <Link href="/verify/demo-candidate-2026" className="w-full sm:w-auto flex-shrink-0">
             <button
               type="button"
               className="w-full sm:w-auto px-6 py-3.5 bg-[#FF5723] hover:bg-[#F4511E] active:bg-[#E64A19] text-white font-bold text-sm rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 group"

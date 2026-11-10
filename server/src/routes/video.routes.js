@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import multer from 'multer';
 import {
+  getPresignedUploadUrl,
+  confirmS3Upload,
+  getPresignedDownloadUrl,
   uploadVideoResponse,
   streamVideoByQuestion,
   streamVideo
@@ -8,7 +11,7 @@ import {
 
 const router = Router();
 
-// Configure multer memory storage with 100MB max limit
+// Configure multer memory storage with 100MB max limit (kept for legacy GridFS compatibility)
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
@@ -16,7 +19,12 @@ const upload = multer({
   }
 });
 
-// Video upload and streaming endpoints
+// AWS S3 presigned upload & download endpoints
+router.post('/:token/presigned-upload', getPresignedUploadUrl);
+router.post('/:token/confirm-upload', confirmS3Upload);
+router.get('/:token/:questionNumber/url', getPresignedDownloadUrl);
+
+// Video streaming & legacy GridFS upload endpoints
 router.post('/:token/upload', upload.single('video'), uploadVideoResponse);
 router.get('/:token/:questionNumber', streamVideoByQuestion);
 router.get('/:fileId', streamVideo);

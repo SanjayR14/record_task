@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'next/navigation';
 import { Star, MessageSquare } from 'lucide-react';
 import ReadAgainButton from '@/components/common/ReadAgainButton';
 import recruiterIcon from '@/assets/Container.svg';
@@ -8,10 +10,14 @@ import callIcon from '@/assets/Container (2).svg';
 import feedbackSvg from '@/assets/feedback.svg';
 import { useVerification } from '@/context/VerificationContext';
 import feedbackService from '@/services/feedbackService';
+import { getTranslations } from '@/i18n/translations';
+import { renderBoldPhrases } from '@/utils/formatBoldText';
 
 export const Step9Feedback = ({ onComplete }) => {
-  const { token: routeToken } = useParams();
-  const { token: contextToken, verificationData } = useVerification();
+  const params = useParams();
+  const routeToken = params?.token;
+  const { token: contextToken, verificationData, t: contextT } = useVerification();
+  const t = contextT || getTranslations();
   const token = routeToken || contextToken;
 
   const storageKey = `record_${token || 'default'}_feedback_completed`;
@@ -101,52 +107,52 @@ export const Step9Feedback = ({ onComplete }) => {
         {/* Assistant Bubble 1: Completed Confirmation */}
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-stone-200/60 max-w-[92%] sm:max-w-[85%] space-y-1.5">
           <p className="text-medium sm:text-sm font-semibold text-slate-800 leading-snug">
-            That's it, all three answers are in. Thank you for taking the time to do this properly.
+            {t.step9.completedBubble}
           </p>
-          <ReadAgainButton text="That's it, all three answers are in. Thank you for taking the time to do this properly." />
+          <ReadAgainButton text={t.step9.completedBubble} />
         </div>
 
-        {/* Assistant Bubble 2: Here's what happens now (with 3 Figma Container SVG icons) */}
+        {/* Assistant Bubble 2: Here's what happens now */}
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-stone-200/60 max-w-[92%] sm:max-w-[85%] space-y-3">
           <p className="text-medium sm:text-sm font-bold text-slate-900">
-            Here's what happens now:
+            {t.step9.happensNowTitle}
           </p>
 
           <div className="space-y-3 pt-0.5">
             {/* Item 1: Recruiter watch */}
             <div className="flex items-center gap-3">
-              <img src={recruiterIcon} alt="Recruiter" className="w-8 h-8 shrink-0 select-none" />
-              <span class="font-sans font-medium text-[15px] leading-[22px] tracking-normal">
-                Your recruiter at Quess Corp will watch your answers
+              <img src={recruiterIcon?.src || recruiterIcon} alt="Recruiter" className="w-8 h-8 shrink-0 select-none" />
+              <span className="font-sans font-medium text-[15px] leading-[22px] tracking-normal">
+                {t.step9.happensNow1}
               </span>
             </div>
 
             {/* Item 2: Match responses */}
             <div className="flex items-center gap-3">
-              <img src={matchIcon} alt="Match responses" className="w-8 h-8 shrink-0 select-none" />
-              <span class="!pt-4 font-sans font-medium text-[15px] leading-[22px] tracking-normal">
-                They'll match your responses to what the <strong className="font-bold text-slate-950">Warehouse Picker</strong> role needs
+              <img src={matchIcon?.src || matchIcon} alt="Match responses" className="w-8 h-8 shrink-0 select-none" />
+              <span className="!pt-4 font-sans font-medium text-[15px] text-black leading-[22px] tracking-normal">
+                {renderBoldPhrases(t.step9.happensNow2, ['Warehouse Picker'])}
               </span>
             </div>
 
             {/* Item 3: Hear back */}
             <div className="flex items-center gap-3">
-              <img src={callIcon} alt="Hear back" className="w-8 h-8 shrink-0 select-none" />
-              <span class="font-sans font-medium text-[15px] leading-[22px] tracking-normal">
-                You'll hear back if you are selected
+              <img src={callIcon?.src || callIcon} alt="Hear back" className="w-8 h-8 shrink-0 select-none" />
+              <span className="font-sans font-medium text-[15px] leading-[22px] tracking-normal">
+                {t.step9.happensNow3}
               </span>
             </div>
           </div>
 
-          <ReadAgainButton text="Here's what happens now: Your recruiter at Quess Corp will watch your answers. They'll match your responses to what the Warehouse Picker role needs. You'll hear back if you are selected." />
+          <ReadAgainButton text={`${t.step9.happensNowTitle} ${t.step9.happensNow1}. ${t.step9.happensNow2}. ${t.step9.happensNow3}`} />
         </div>
 
         {/* Assistant Bubble 3: Final sign-off */}
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-stone-200/60 max-w-[92%] sm:max-w-[85%] space-y-1.5">
           <p className="text-medium sm:text-sm text-slate-800 leading-relaxed font-medium">
-            You can close this chat now, we've got everything we need. Good luck.
+            {t.step9.closeChatBubble}
           </p>
-          <ReadAgainButton text="You can close this chat now, we've got everything we need. Good luck." />
+          <ReadAgainButton text={t.step9.closeChatBubble} />
         </div>
       </div>
 
@@ -175,7 +181,7 @@ export const Step9Feedback = ({ onComplete }) => {
                 <div className="flex items-center justify-between">
                   <MessageSquare className="w-6 h-6 text-[#FF5723]" strokeWidth={2.2} />
                   <ReadAgainButton
-                    text="How was this? Quick feedback helps us make this easier for the next person."
+                    text={`${t.step9.howWasThis} ${t.step9.feedbackDesc}`}
                     label="Listen"
                   />
                 </div>
@@ -183,10 +189,10 @@ export const Step9Feedback = ({ onComplete }) => {
                 {/* Title & Description */}
                 <div className="space-y-1">
                   <h3 className="text-sm sm:text-base font-semibold text-[#FF5723]">
-                    How was this?
+                    {t.step9.howWasThis}
                   </h3>
                   <p className="text-medium text-neutral-500 font-normal leading-relaxed">
-                    Quick feedback helps us make this easier for the next person.
+                    {t.step9.feedbackDesc}
                   </p>
                 </div>
 
@@ -218,7 +224,7 @@ export const Step9Feedback = ({ onComplete }) => {
                 <textarea
                   value={comments}
                   onChange={(e) => setComments(e.target.value)}
-                  placeholder="Anything that was confusing or difficult?"
+                  placeholder={t.step9.feedbackPlaceholder}
                   rows={3}
                   className="w-full text-xs sm:text-sm pt-2 pl-2 rounded-xl border border-neutral-200 focus:border-[#FF5723] focus:ring-1 focus:ring-[#FF5723] outline-none resize-none text-slate-800 placeholder:text-neutral-400 bg-white"
                 />
@@ -230,7 +236,7 @@ export const Step9Feedback = ({ onComplete }) => {
                     onClick={handleSubmit}
                     className="w-full py-3.5 px-4 bg-[#FF5723] hover:bg-[#F4511E] active:bg-[#E64A19] text-white font-semibold text-sm rounded-xl shadow-md transition-all active:scale-[0.99] flex items-center justify-center cursor-pointer"
                   >
-                    Submit feedback
+                    {t.step9.submitFeedback}
                   </button>
 
                   <button
@@ -238,17 +244,17 @@ export const Step9Feedback = ({ onComplete }) => {
                     onClick={handleDismiss}
                     className="w-full py-2 text-xs sm:text-sm text-neutral-600 hover:text-neutral-900 font-medium text-center cursor-pointer transition-colors"
                   >
-                    Not now
+                    {t.step9.notNow}
                   </button>
                 </div>
               </div>
             ) : (
-              /* State 2: After Feedback - Thanks for Sharing! (Exact match to uploaded image 2) */
+              /* State 2: After Feedback - Thanks for Sharing! */
               <div className="space-y-3 pt-1 pb-1 animate-fadeIn">
                 {/* Concentric Green Checkmark SVG */}
                 <div className="flex justify-center">
                   <img
-                    src={feedbackSvg}
+                    src={feedbackSvg?.src || feedbackSvg}
                     alt="Feedback received"
                     className="w-16 h-16 select-none"
                     draggable={false}
@@ -257,12 +263,12 @@ export const Step9Feedback = ({ onComplete }) => {
 
                 {/* Green Heading */}
                 <h3 className="text-base sm:text-lg font-semibold text-[#16A34A] text-center">
-                  Thanks for sharing!
+                  {t.step9.thanksTitle}
                 </h3>
 
                 {/* Subtitle message */}
                 <p className="text-sm sm:text-[13px] text-neutral-500 font-normal leading-relaxed max-w-xs mx-auto">
-                  Thanks for taking the time. Your feedback helps us improve this for the next person.
+                  {t.step9.thanksDesc}
                 </p>
 
                 {/* Done Button */}
@@ -272,7 +278,7 @@ export const Step9Feedback = ({ onComplete }) => {
                     onClick={handleDone}
                     className="w-full py-3.5 px-4 bg-[#FF5723] hover:bg-[#F4511E] active:bg-[#E64A19] text-white font-semibold text-sm rounded-xl shadow-md transition-all active:scale-[0.99] flex items-center justify-center cursor-pointer"
                   >
-                    Done
+                    {t.step9.done}
                   </button>
                 </div>
               </div>

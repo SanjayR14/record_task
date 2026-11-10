@@ -3,6 +3,7 @@ import Verification from '../models/Verification.js';
 import VideoMetadata from '../models/VideoMetadata.js';
 import Feedback from '../models/Feedback.js';
 import { VideoStorageService } from '../services/videoStorage.service.js';
+import { S3VideoStorageService } from '../services/s3VideoStorage.service.js';
 import { hashToken } from '../utils/token.js';
 
 /**
@@ -29,9 +30,12 @@ const run = async () => {
       process.exit(0);
     }
 
-    // Delete any GridFS videos associated with this session
+    // Delete any S3 objects or legacy GridFS videos associated with this session
     if (session.responses && session.responses.length > 0) {
       for (const resp of session.responses) {
+        if (resp.s3Key) {
+          await S3VideoStorageService.deleteObject(resp.s3Key, resp.s3Bucket || undefined);
+        }
         if (resp.gridFsFileId) {
           await VideoStorageService.deleteFile(resp.gridFsFileId);
         }
@@ -48,6 +52,21 @@ const run = async () => {
     session.currentQuestion = 1;
     session.completedInstructions = [];
     session.permissions = { camera: 'unknown', microphone: 'unknown', location: 'unknown' };
+    session.locationDetails = {
+      latitude: null,
+      longitude: null,
+      accuracy: null,
+      pincode: null,
+      pincodeVerified: false,
+      postOffice: null,
+      district: null,
+      city: null,
+      state: null,
+      country: null,
+      formattedAddress: null,
+      source: null,
+      capturedAt: null
+    };
     session.responses = [
       { questionNumber: 1, uploadStatus: 'pending' },
       { questionNumber: 2, uploadStatus: 'pending' },

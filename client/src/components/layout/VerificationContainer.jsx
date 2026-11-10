@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import VerificationHeader from './VerificationHeader';
 import bgTexture from '@/components/ui/056a8700c1cdc4b96e7bb7fa102a466612add191.png';
@@ -10,6 +12,7 @@ import bgTexture from '@/components/ui/056a8700c1cdc4b96e7bb7fa102a466612add191.
 export const VerificationContainer = ({
   children,
   onChangeLanguage,
+  onSelectLanguage,
   onNeedHelp,
   header = true,
   className = '',
@@ -18,11 +21,13 @@ export const VerificationContainer = ({
   isLanguageScreen = false,
   isAlreadyCompletedScreen = false
 }) => {
+  const bgUrl = bgTexture?.src || bgTexture;
+
   return (
     <div
       className="min-h-screen w-full flex flex-col font-sans antialiased text-slate-900 relative bg-[#F8F6F1] bg-cover bg-center bg-fixed bg-no-repeat"
       style={{
-        backgroundImage: `url(${bgTexture})`,
+        backgroundImage: `url(${bgUrl})`,
         backgroundAttachment: 'fixed',
         backgroundPosition: 'center',
         backgroundSize: 'cover',
@@ -33,6 +38,7 @@ export const VerificationContainer = ({
         <>
           <VerificationHeader
             onChangeLanguage={onChangeLanguage}
+            onSelectLanguage={onSelectLanguage}
             onNeedHelp={onNeedHelp}
             totalSteps={totalSteps}
             currentStep={currentStep}

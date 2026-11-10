@@ -2,6 +2,7 @@ import { Router } from 'express';
 import healthRoutes from './health.routes.js';
 import verificationRoutes from './verification.routes.js';
 import videoRoutes from './video.routes.js';
+import translateRoutes from './translate.routes.js';
 
 const router = Router();
 
@@ -14,5 +15,8 @@ router.use('/verification', verificationRoutes);
 
 // MongoDB GridFS video streaming & upload routes
 router.use('/videos', videoRoutes);
+
+// Dynamic Groq AI translation endpoint: POST /api/translate
+router.use('/translate', translateRoutes);
 
 export default router;

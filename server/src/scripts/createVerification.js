@@ -42,9 +42,9 @@ const run = async () => {
       ]
     });
 
-    // 5. Construct verification URL
-    const clientBase = config.clientUrl || 'http://localhost:5173';
-    const verificationUrl = `${clientBase}/verify/${rawToken}/language`;
+    // 5. Construct verification URL (resumes automatically at candidate's saved step)
+    const clientBase = config.clientUrl || 'http://localhost:3000';
+    const verificationUrl = `${clientBase}/verify/${rawToken}`;
 
     console.log('\n======================================================');
     console.log('✅ NEW CANDIDATE VERIFICATION LINK GENERATED');

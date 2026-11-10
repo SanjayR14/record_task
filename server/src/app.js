@@ -10,7 +10,7 @@ const app = express();
 // CORS configuration supporting frontend client
 const allowedOrigins = [
   config.clientUrl,
-  'http://localhost:5173',
+  // 'http://localhost:5173',
   'http://127.0.0.1:5173',
   'http://localhost:3000'
 ];
